@@ -1,6 +1,170 @@
 ﻿# Powershell Simple HTTP Server
 
 #region Start/Stop functions
+function Start-HTTPListener {
+<#
+.SYNOPSIS
+    Starts an HTTP Listener
+.DESCRIPTION
+    Invokes an HTTP Listener with the given prefix and content generation scriptblock.
+.PARAM Prefix
+    The URL Prefix to use
+.PARAM Content
+    The content generation scriptblock
+#>
+    [CmdletBinding()]
+
+    param(
+        [Parameter()]
+        $Prefix = 'http://+:8080/',
+        [Parameter()]
+        [Scriptblock]$Content = {
+            "<head><title>Hello world!</title><body>HELLO WORLD!</body>"
+          }
+    )
+
+    begin {
+        Write-Verbose "Checking prefix"
+        if (-not (Test-IsAdministrator) -and -not (Test-URLPrefix -Prefix $Prefix)) {
+            Write-Error -Message "Cannot run without defined prefix or elevated privileges. Try Register-URLPrefix from an elevated shell."
+        }
+
+        if (-not (Test-Path -Path VARIABLE:SCRIPT:HTTPListener)) {
+            Write-Verbose -Message "Creating tracking variable"
+            $Script:HTTPListener = @{}
+        } else {
+            Write-Verbose -Message "Checking tracking variable"
+            if ($Script:HTTPListener.$Prefix) {
+                Write-Error "HTTP Server already running. Consider Stop-HTTPListener."
+            }
+        }
+    }
+
+    process {
+        Write-Verbose "Starting server $Prefix"
+        $Script:HTTPListener.$Prefix = [powershell]::Create()
+        $Script:HTTPListener.$Prefix.AddCommand('Invoke-HTTPListener')
+        $Script:HTTPListener.$Prefix.AddParameter('Prefix', $Prefix)
+        $Script:HTTPListener.$Prefix.AddParameter('Content', $Content)
+        $Script:HTTPListener.$Prefix.BeginInvoke()
+    }
+
+    end {}
+
+}
+
+function Stop-HTTPListener {
+    [CmdletBinding()]
+
+    param(
+        [Parameter()]
+        [String]$Prefix = 'http://+:8080/'
+    )
+
+    begin {}
+
+    process {
+        Write-Verbose "Checking Prefix $Prefix"
+        if ($Script:HTTPListener.$Prefix) {
+            Write-Verbose "Stopping listener"
+            $Script:HTTPListener.$Prefix.Stop()
+            $Script:HTTPListener.$Prefix.Dispose()
+            $Script:HTTPListener.Remove($Prefix)
+
+        } else {
+            throw "Prefix $Prefix is not present."
+        }
+    }
+
+    end {}
+}
+
+function Restart-HTTPListener {
+}
+
+function Invoke-HTTPListener {
+<#
+.SYNOPSIS
+    Starts an HTTP Listener
+.DESCRIPTION
+    Starts an HTTP Listener on the specified URL prefix and bound to the specified scriptblock for content generation
+.PARAM Prefix
+    A Mandatory prefix 
+.PARAM Content
+    A Scriptblock which generates the content
+.NOTES
+    Ideally called by Start-HTTPListener, which does some checks on the prefix, etc
+#>
+
+    [CmdletBinding()]
+
+    param(
+        [Parameter(Mandatory=$true)]
+        [String]$Prefix,
+        [Parameter(Mandatory=$true)]
+        [Scriptblock]$Content
+    )
+
+    begin {
+        Write-Verbose "Content scriptblock is: $Content"
+
+
+        $callback_scriptblock = [scriptblock]::Create(@"
+    param(`$result)
+    
+    "`$(get-date) callback Started" >> C:\Users\cs1trp\Documents\scratch\debug.log
+   `$listener = `$result.AsyncState
+   `$context = `$listener.EndGetContext(`$result)
+   `$response = `$context.Response
+   `$request = `$context.Request
+   "`$(get-date) got state of request and response" >> C:\Users\cs1trp\Documents\scratch\debug.log
+   "`$(get-date) `$listener" >> C:\Users\cs1trp\Documents\scratch\debug.log
+   "`$(get-date) `$context" >> C:\Users\cs1trp\Documents\scratch\debug.log
+   "`$(get-date) `$response" >> C:\Users\cs1trp\Documents\scratch\debug.log
+   "`$(get-date) `$request" >> C:\Users\cs1trp\Documents\scratch\debug.log
+
+   `$response.ContentType = 'text/plain'
+
+    `$output_content = & {$($Content.ToString())}
+   
+    [byte[]] `$buffer = [System.Text.Encoding]::UTF8.GetBytes(`$output_content)
+    `$response.ContentLength64 = `$buffer.length
+    `$output = `$response.OutputStream
+    `$output.Write(`$buffer, 0, `$buffer.length)
+    `$output.Close()
+
+"@)
+    
+    }
+
+    process {
+        $listener = New-Object -TypeName Net.HTTPListener
+        
+        Write-Verbose -Message "Adding $Prefix to listener"
+        $listener.Prefixes.Add($Prefix)
+
+        Write-Verbose -Message "Starting Listener"
+        $listener.Start()
+
+        Write-Verbose -Message "Registering Asynchronous callback"
+        Write-Verbose $callback_scriptblock.ToString()
+        $callback = New-ScriptblockCallback -Callback $callback_scriptblock
+
+        Write-Verbose "callback registered"
+        Write-Verbose "waiting for result"
+        
+        while ($true) {
+            $result = $listener.BeginGetContext(($callback), $listener)
+            $result.AsyncWaitHandle.WaitOne();
+        }
+        
+    }
+
+    end {
+        $listener.stop()
+    }
+
+}
 #endregion
 
 #region Helper functions
@@ -75,8 +239,11 @@ function New-ScriptblockCallback {
     }
 
     process {
+        Write-Verbose "Creating Event Bridge"
         $bridge = [callbackeventbridge]::create()
+        Write-Verbose "Registering Event Bridge"
         Register-ObjectEvent -input $bridge -EventName callbackcomplete -action $Callback -messagedata $args | Out-Null
+        Write-Verbose "Invoking callback"
         $bridge.callback
     }
 
@@ -100,13 +267,7 @@ function Test-URLPrefix {
     [CmdletBinding()]
 
     param([Parameter(Mandatory=$true)]
-           [ValidateScript({
-            if ($_ -match '^(http,https)\://[a-zA-Z0-9\.\-\+\*]+\:\d+\\') {
-                $true
-            } else {
-                $false
-            }  
-          })]
+           
           [String]$Prefix,
           [Parameter()]
           [String]$Username = (Get-CurrentUserName)
@@ -154,7 +315,6 @@ function Register-URLPrefix {
     [CmdletBinding()]
 
     param([Parameter(Mandatory=$true)]
-          [ValidatePattern('[http,https]\://[a-zA-Z0-9\.\-\+\*]+\:+\d+/')]
           [String]$Prefix,
           [Parameter()]
           [String]$User=(Get-CurrentUserName)
@@ -211,8 +371,8 @@ function Get-URLPrefix {
                     $user = $matches.user
                     
                     New-Object -TypeName PSObject -Property @{
-                        'URL' = $url
-                        'User' = $user
+                        'URL' = $url.Trim()
+                        'User' = $user.Trim()
                     }
                 }
             }
