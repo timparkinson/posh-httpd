@@ -82,6 +82,7 @@ function New-ScriptblockCallback {
 
     end {}
 }
+
 function Test-URLPrefix {
 <#
     .SYNOPSIS
@@ -129,4 +130,95 @@ function Test-URLPrefix {
     end {}
 }
 
+function Register-URLPrefix {
+<#
+    .SYNOPSIS
+        Registers a URL Prefix
+
+    .DESCRIPTION
+        Requires elevated privileges to register a URL prefix using netsh
+
+    .PARAMETER Prefix
+        The prefix to register
+
+    .PARAMETER User
+        The user (DOMAIN\User) to register the prefix for
+
+    .INPUTS
+        None
+
+    .OUTPUTS
+        None
+#>
+
+    [CmdletBinding()]
+
+    param([Parameter(Mandatory=$true)]
+          [ValidatePattern('[http,https]\://[a-zA-Z0-9\.\-\+\*]+\:+\d+/')]
+          [String]$Prefix,
+          [Parameter()]
+          [String]$User=(Get-CurrentUserName)
+    )
+
+    begin {
+        if (-not (Test-IsAdministrator)) {
+            Write-Error -Message  "Elevated privileges required." -ErrorAction Stop
+        }
+    }
+
+    process {
+        $netsh_cmd = "netsh http add urlacl url=$Prefix user=$User"
+
+        Write-Verbose "Registering URL prefix using $netsh_cmd"
+        Invoke-Expression -Command $netsh_cmd
+    }
+
+    end {}
+}
+
+function Get-URLPrefix {
+<#
+    .SYNOPSIS
+        Gets registered URL Prefixes
+
+    .DESCRIPTION
+        Gets the registered URL Prefixes using netsh
+
+    .INPUTS
+        None
+
+    .OUTPUTS
+        PSObject
+#>
+
+    [CmdletBinding()]
+
+    param()
+
+    begin {}
+
+    process {
+        $netsh_cmd = "netsh http show urlacl"
+
+        $result = Invoke-Expression -Command $netsh_cmd
+
+        $i = 0
+        $result |
+            ForEach-Object {
+                if ($_ -match 'Reserved URL\s+\: (?<url>.*)') {
+                    $url = $matches.url
+                } elseif ($_ -match 'User\: (?<user>.*)') {
+                    $user = $matches.user
+                    
+                    New-Object -TypeName PSObject -Property @{
+                        'URL' = $url
+                        'User' = $user
+                    }
+                }
+            }
+    }
+
+    end {}
+
+}
 #endregion
