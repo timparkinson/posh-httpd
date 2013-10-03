@@ -42,12 +42,6 @@ function Start-HTTPListener {
 
     process {
         Write-Verbose "Starting server $Prefix"
-        #$Script:HTTPListener.$Prefix = [powershell]::Create() 
-        #$Script:HTTPListener.$Prefix.AddCommand('Invoke-HTTPListener') | Out-Null
-        #$Script:HTTPListener.$Prefix.AddParameter('Prefix', $Prefix) | Out-Null
-        #$Script:HTTPListener.$Prefix.AddParameter('Content', $Content) | Out-Null
-        #$Script:HTTPListener.$Prefix.BeginInvoke()
-        Write-Verbose "Content scriptblock $Content"
         $Script:HTTPListener.$Prefix = Start-Job -Name "HTTP_Listener_$Prefix" -ScriptBlock {Invoke-HTTPListener -Prefix $args[0] -Content $args[1] -Verbose} -ArgumentList @($Prefix,$Content)
     }
 
@@ -81,6 +75,29 @@ function Stop-HTTPListener {
 }
 
 function Restart-HTTPListener {
+<#
+.SYNOPSIS
+    Restarts the given listener
+.DESCRIPTION
+    Restarts the listener using a given URL prefix
+.PARAM Prefix
+    The URL Prefix of the listener to restart
+#>
+    [CmdletBinding()]
+
+    param(
+        [Parameter()]
+        [String]$Prefix = 'http://+:8080/'
+    )
+
+    begin {}
+
+    process {
+        Stop-HTTPListener $Prefix
+        Start-HTTPListener $Prefix
+    }
+
+    end {}
 }
 
 function Invoke-HTTPListener {
@@ -113,7 +130,6 @@ function Invoke-HTTPListener {
     begin {
         Write-Verbose "Content scriptblock is: $Content"
 
-
         $callback_scriptblock = [scriptblock]::Create(@"
     param(`$result)
     
@@ -130,7 +146,7 @@ function Invoke-HTTPListener {
 
    `$response.ContentType = 'text/plain'
 
-    `$output_content = Invoke-Command -Scriptblock {$($Content.ToString())} -ArgumentList `$request
+    `$output_content = Invoke-Command -Scriptblock {$($Content.ToString())} -ArgumentList `$context
    
     [byte[]] `$buffer = [System.Text.Encoding]::UTF8.GetBytes(`$output_content)
     `$response.ContentLength64 = `$buffer.length
