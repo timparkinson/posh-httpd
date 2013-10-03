@@ -82,4 +82,51 @@ function New-ScriptblockCallback {
 
     end {}
 }
+function Test-URLPrefix {
+<#
+    .SYNOPSIS
+        Tests whether a given prefix and user exist
+
+    .DESCRIPTION
+        Tests whether a prefix and user exist
+
+    .INPUTS
+        None
+
+    .OUTPUTS
+        Boolean
+#>
+    [CmdletBinding()]
+
+    param([Parameter(Mandatory=$true)]
+           [ValidateScript({
+            if ($_ -match '^(http,https)\://[a-zA-Z0-9\.\-\+\*]+\:\d+\\') {
+                $true
+            } else {
+                $false
+            }  
+          })]
+          [String]$Prefix,
+          [Parameter()]
+          [String]$Username = (Get-CurrentUserName)
+    )
+
+    begin {}
+
+    process {
+        $url_prefix = Get-URLPrefix | 
+            Where-Object {$_.url -eq $Prefix}
+
+        if (-not $url_prefix) {
+            Write-Error "Prefix $Prefix not found" -ErrorAction Stop
+        } elseif ($url_prefix.User -ne $Username) {
+            $false
+        } else {
+            $true
+        }
+    }
+
+    end {}
+}
+
 #endregion
