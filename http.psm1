@@ -42,11 +42,13 @@ function Start-HTTPListener {
 
     process {
         Write-Verbose "Starting server $Prefix"
-        $Script:HTTPListener.$Prefix = [powershell]::Create()
-        $Script:HTTPListener.$Prefix.AddCommand('Invoke-HTTPListener')
-        $Script:HTTPListener.$Prefix.AddParameter('Prefix', $Prefix)
-        $Script:HTTPListener.$Prefix.AddParameter('Content', $Content)
-        $Script:HTTPListener.$Prefix.BeginInvoke()
+        #$Script:HTTPListener.$Prefix = [powershell]::Create() 
+        #$Script:HTTPListener.$Prefix.AddCommand('Invoke-HTTPListener') | Out-Null
+        #$Script:HTTPListener.$Prefix.AddParameter('Prefix', $Prefix) | Out-Null
+        #$Script:HTTPListener.$Prefix.AddParameter('Content', $Content) | Out-Null
+        #$Script:HTTPListener.$Prefix.BeginInvoke()
+        Write-Verbose "Content scriptblock $Content"
+        $Script:HTTPListener.$Prefix = Start-Job -Name "HTTP_Listener_$Prefix" -ScriptBlock {Invoke-HTTPListener -Prefix $args[0] -Content $args[1] -Verbose} -ArgumentList @($Prefix,$Content)
     }
 
     end {}
@@ -67,8 +69,7 @@ function Stop-HTTPListener {
         Write-Verbose "Checking Prefix $Prefix"
         if ($Script:HTTPListener.$Prefix) {
             Write-Verbose "Stopping listener"
-            $Script:HTTPListener.$Prefix.Stop()
-            $Script:HTTPListener.$Prefix.Dispose()
+            Stop-Job -Job  $Script:HTTPListener.$Prefix
             $Script:HTTPListener.Remove($Prefix)
 
         } else {
@@ -102,7 +103,7 @@ function Invoke-HTTPListener {
         [Parameter(Mandatory=$true)]
         [String]$Prefix,
         [Parameter(Mandatory=$true)]
-        [Scriptblock]$Content
+        $Content
     )
 
     begin {
@@ -155,7 +156,7 @@ function Invoke-HTTPListener {
         
         while ($true) {
             $result = $listener.BeginGetContext(($callback), $listener)
-            $result.AsyncWaitHandle.WaitOne();
+            $result.AsyncWaitHandle.WaitOne([timespan]'0:0:5');
         }
         
     }
