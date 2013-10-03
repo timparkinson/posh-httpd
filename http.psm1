@@ -93,6 +93,8 @@ function Invoke-HTTPListener {
     A Mandatory prefix 
 .PARAM Content
     A Scriptblock which generates the content
+.PARAM Timeout
+    The timeout in milliseconds on the wait for input, this allows the listener to be stopped
 .NOTES
     Ideally called by Start-HTTPListener, which does some checks on the prefix, etc
 #>
@@ -103,7 +105,9 @@ function Invoke-HTTPListener {
         [Parameter(Mandatory=$true)]
         [String]$Prefix,
         [Parameter(Mandatory=$true)]
-        $Content
+        $Content,
+        [Parameter()]
+        [int32]$Timeout = 5000
     )
 
     begin {
@@ -126,7 +130,7 @@ function Invoke-HTTPListener {
 
    `$response.ContentType = 'text/plain'
 
-    `$output_content = & {$($Content.ToString())}
+    `$output_content = Invoke-Command -Scriptblock {$($Content.ToString())} -ArgumentList `$request
    
     [byte[]] `$buffer = [System.Text.Encoding]::UTF8.GetBytes(`$output_content)
     `$response.ContentLength64 = `$buffer.length
@@ -156,7 +160,7 @@ function Invoke-HTTPListener {
         
         while ($true) {
             $result = $listener.BeginGetContext(($callback), $listener)
-            $result.AsyncWaitHandle.WaitOne([timespan]'0:0:5');
+            $result.AsyncWaitHandle.WaitOne($Timeout);
         }
         
     }
