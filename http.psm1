@@ -133,27 +133,31 @@ function Invoke-HTTPListener {
         $callback_scriptblock = [scriptblock]::Create(@"
     param(`$result)
     
-    "`$(get-date) callback Started" >> C:\Users\cs1trp\Documents\scratch\debug.log
-   `$listener = `$result.AsyncState
-   `$context = `$listener.EndGetContext(`$result)
-   `$response = `$context.Response
-   `$request = `$context.Request
-   "`$(get-date) got state of request and response" >> C:\Users\cs1trp\Documents\scratch\debug.log
-   "`$(get-date) `$listener" >> C:\Users\cs1trp\Documents\scratch\debug.log
-   "`$(get-date) `$context" >> C:\Users\cs1trp\Documents\scratch\debug.log
-   "`$(get-date) `$response" >> C:\Users\cs1trp\Documents\scratch\debug.log
-   "`$(get-date) `$request" >> C:\Users\cs1trp\Documents\scratch\debug.log
+    Import-Module http
 
-   `$response.ContentType = 'text/plain'
+    `$listener = `$result.AsyncState
+    `$context = `$listener.EndGetContext(`$result)
+    `$response = `$context.Response
+    `$request = `$context.Request
 
     `$output_content = Invoke-Command -Scriptblock {$($Content.ToString())} -ArgumentList `$context
-   
-    [byte[]] `$buffer = [System.Text.Encoding]::UTF8.GetBytes(`$output_content)
-    `$response.ContentLength64 = `$buffer.length
-    `$output = `$response.OutputStream
-    `$output.Write(`$buffer, 0, `$buffer.length)
-    `$output.Close()
 
+    `$output_content = ConvertTo-HTTPOutput -InputObject `$output_content
+
+    if (`$output_content.ContentStream) {
+                
+        `$response.StatusCode = `$output_content.StatusCode
+        `$output_content.ContentStream.CopyTo(`$response.OutputStream) # hope this works
+
+    } elseif (`$output_content.ContentBytes) {
+        `$response.StatusCode = `$output_content.StatusCode
+        `$response.ContentLength64 = `$output_content.ContentBytes.Length
+        `$response.OutputStream.Write(`$output_content.ContentBytes, 0, `$output_content.ContentBytes.Length)        
+    } else {
+        `$response.StatusCode = [System.Net.HttpStatusCode]::InternalServerError
+    }
+
+    `$response.Close()
 "@)
     
     }
@@ -460,5 +464,87 @@ function Get-CurrentUserName {
     }
 
     end {}
+}
+#endregion
+
+#region Output conversion, etc
+function ConvertTo-HTTPOutput {
+<#
+    .SYNOPSIS
+        Tries to convert output into something sensible
+    
+    .DESCRIPTION
+        Makes guesses at what the output being returned is, and tries to convert it to an object with status attached, etc.
+
+    .PARAMETER InputObject
+        The object to convert into an HTTP Output object
+
+    .INPUTS
+        Object
+
+    .OUTPUTS
+        HTTPOutput
+#>
+    [CmdletBinding()]
+
+    param([Parameter(Mandatory=$true)]
+          $InputObject
+    )
+
+    begin {
+        if (-not ("HTTPOutput" -as [type])) {
+            Write-Verbose -Message "Registering HTTPOutput type"
+            "$(get-date) registering type" >> c:\users\cs1trp\documents\scratch\debug.log
+            
+            Add-Type -TypeDefinition @"
+            using System;
+            using System.Net;
+            using System.IO;
+             
+            public class HTTPOutput
+            {
+                public String ContentType;
+
+                public HttpStatusCode StatusCode;
+
+                public Byte[] ContentBytes;
+
+                public Stream ContentStream;
+            }
+"@
+        }
+    }
+
+    process {
+        if($InputObject.GetType().Name -eq 'HTTPOutput') {
+            Write-Verbose -Message "Already an HTTP output object"   
+            $output = $InputObject
+        } else {
+            Write-Verbose "Creating output object"
+            $output = New-Object -TypeName HTTPOutput
+
+            Write-Verbose "Checking whether input is a stream"
+            if ($InputObject.GetType().BaseType -eq  'System.IO.Stream') {
+               $output.ContentStream = $InputObject 
+            }
+
+            Write-Verbose "Checking whether input is a string"
+            if ($InputObject.GetType().Name -eq 'String') {
+                $output.ContentBytes =  [Text.Encoding]::UTF8.GetBytes($InputObject)
+            }
+
+            Write-Verbose "Adding a content type"
+            $output.ContentType = 'text/html'
+
+            Write-Verbose "Adding status code"
+            $output.StatusCode = [System.Net.HttpStatusCode]::OK
+        }
+        $output
+
+        
+    }
+
+    end {}
+
 }
 #endregion
