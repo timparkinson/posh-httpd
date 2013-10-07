@@ -19,7 +19,7 @@ function Start-HTTPListener {
         $Prefix = 'http://+:8080/',
         [Parameter()]
         [Scriptblock]$Content = {
-            "<head><title>Hello world!</title><body>HELLO WORLD!</body>"
+            "<head><title>Hello world!</title><body>HELLO WORLD! at $(Get-Date)</body>"
           }
     )
 
