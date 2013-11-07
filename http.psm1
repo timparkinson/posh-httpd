@@ -468,6 +468,36 @@ function Get-CurrentUserName {
 #endregion
 
 #region Output conversion, etc
+
+function Register-HTTPOutputType {
+
+    process {
+        if (-not ("HTTPOutput" -as [type])) {
+            Write-Verbose -Message "Registering HTTPOutput type"
+            "$(get-date) registering type" >> c:\users\cs1trp\documents\scratch\debug.log
+            
+            Add-Type -TypeDefinition @"
+            using System;
+            using System.Net;
+            using System.IO;
+             
+            public class HTTPOutput
+            {
+                public String ContentType;
+
+                public HttpStatusCode StatusCode;
+
+                public Byte[] ContentBytes;
+
+                public Stream ContentStream;
+            }
+"@
+        }        
+    
+    }
+
+}
+
 function ConvertTo-HTTPOutput {
 <#
     .SYNOPSIS
@@ -492,27 +522,7 @@ function ConvertTo-HTTPOutput {
     )
 
     begin {
-        if (-not ("HTTPOutput" -as [type])) {
-            Write-Verbose -Message "Registering HTTPOutput type"
-            "$(get-date) registering type" >> c:\users\cs1trp\documents\scratch\debug.log
-            
-            Add-Type -TypeDefinition @"
-            using System;
-            using System.Net;
-            using System.IO;
-             
-            public class HTTPOutput
-            {
-                public String ContentType;
-
-                public HttpStatusCode StatusCode;
-
-                public Byte[] ContentBytes;
-
-                public Stream ContentStream;
-            }
-"@
-        }
+        Register-HTTPOutputType
     }
 
     process {
@@ -546,5 +556,32 @@ function ConvertTo-HTTPOutput {
 
     end {}
 
+}
+
+function Get-StatusPage {
+    [CmdletBinding()]
+
+    param(
+        [Parameter(Mandatory=$true)]
+        [System.Net.HttpStatusCode]$Status,
+        [Parameter()]
+        $Path = $PSScriptRoot,
+        [Parameter()]
+        $Extension = '.html'
+    )
+
+    begin {
+        Register-HTTPOutputType
+    }
+
+    process {
+        $file_path = Join-Path -Path $Path -ChildPath "$($status.value__).$Extension"
+
+        if (Test-Path -Path $file_path) {
+            #TODO: grab content bytes and shove into an output type
+        }
+    }
+
+    end {}
 }
 #endregion
