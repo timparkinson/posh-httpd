@@ -140,7 +140,7 @@ function Invoke-HTTPListener {
     `$response = `$context.Response
     `$request = `$context.Request
 
-    `$output_content = Invoke-Command -Scriptblock {$($Content.ToString())} -ArgumentList `$context
+    `$output_content = Invoke-Command -Scriptblock {$($Content.ToString())} -ArgumentList `$request
 
     `$output_content = ConvertTo-HTTPOutput -InputObject `$output_content
 
@@ -517,7 +517,8 @@ function ConvertTo-HTTPOutput {
 #>
     [CmdletBinding()]
 
-    param([Parameter(Mandatory=$true)]
+    param([Parameter(Mandatory=$true,
+                     ValueFromPipeline=$true)]
           $InputObject
     )
 
@@ -525,7 +526,7 @@ function ConvertTo-HTTPOutput {
         Register-HTTPOutputType
     }
 
-    process {
+    end {
         if($InputObject.GetType().Name -eq 'HTTPOutput') {
             Write-Verbose -Message "Already an HTTP output object"   
             $output = $InputObject
@@ -533,15 +534,20 @@ function ConvertTo-HTTPOutput {
             Write-Verbose "Creating output object"
             $output = New-Object -TypeName HTTPOutput
 
-            Write-Verbose "Checking whether input is a stream"
+
             if ($InputObject.GetType().BaseType -eq  'System.IO.Stream') {
                $output.ContentStream = $InputObject 
             }
 
-            Write-Verbose "Checking whether input is a string"
-            if ($InputObject.GetType().Name -eq 'String') {
+
+            elseif ($InputObject.GetType().Name -eq 'String') {
                 $output.ContentBytes =  [Text.Encoding]::UTF8.GetBytes($InputObject)
+            }  
+
+            else {
+                $output.ContentBytes =  [Text.Encoding]::UTF8.GetBytes(($InputObject | Out-String))
             }
+
 
             Write-Verbose "Adding a content type"
             $output.ContentType = 'text/html'
@@ -554,7 +560,7 @@ function ConvertTo-HTTPOutput {
         
     }
 
-    end {}
+
 
 }
 
@@ -578,10 +584,13 @@ function Get-StatusPage {
         $file_path = Join-Path -Path $Path -ChildPath "$($status.value__).$Extension"
 
         if (Test-Path -Path $file_path) {
-            #TODO: grab content bytes and shove into an output type
+            [Text.Encoding]::UTF8.GetBytes((Get-Content -Raw -Path $file_path))
         }
     }
 
     end {}
 }
+#endregion
+
+#region DSL
 #endregion
