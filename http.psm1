@@ -140,7 +140,9 @@ function Invoke-HTTPListener {
     `$response = `$context.Response
     `$request = `$context.Request
 
-    `$output_content = Invoke-Command -Scriptblock {$($Content.ToString())} -ArgumentList `$request
+    `$output_content = Invoke-Command -Scriptblock {
+        param(`$request)
+        $($Content.ToString())} -ArgumentList `$request
 
     `$output_content = ConvertTo-HTTPOutput -InputObject `$output_content
 
@@ -545,6 +547,7 @@ function ConvertTo-HTTPOutput {
             }  
 
             else {
+
                 $output.ContentBytes =  [Text.Encoding]::UTF8.GetBytes(($InputObject | Out-String))
             }
 
