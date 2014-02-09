@@ -81,3 +81,14 @@ URL Reservations:
     }
 
 }
+
+Describe "Get-CurrentUsername" {
+
+    Context "when called" {
+        $expected_result = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+        $result = Get-CurrentUsername
+        It "should return the username" {
+            $result | Should Be $expected_result
+        }
+    }
+}

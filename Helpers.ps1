@@ -90,3 +90,31 @@ function Get-URLPrefix {
     end {}
 
 }
+
+function Get-CurrentUserName {
+<#
+    .SYNOPSIS
+        Gets the username of the current user
+
+    .DESCRIPTION
+        Gets the username of the current user in DOMAIN
+
+    .INPUTS
+        None
+
+    .OUTPUTS
+        String
+#>
+
+    [CmdletBinding()]
+
+    param()
+
+    begin {}
+
+    process {
+        [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+    }
+
+    end {}
+}
