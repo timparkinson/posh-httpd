@@ -1,6 +1,7 @@
 ﻿$here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.", ".")
 . "$here\$sut"
+. "$here\Helpers.ps1"
 
 Describe "Add-HTTPListener" {
     $prefix = 'http://someprefix:8080/'
