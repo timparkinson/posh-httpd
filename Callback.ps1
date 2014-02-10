@@ -44,6 +44,7 @@
              
             public sealed class CallbackEventBridge
             {
+
                 public event AsyncCallback CallbackComplete = delegate { };
  
                 private CallbackEventBridge() {}
@@ -91,13 +92,18 @@ function ConvertTo-HTTPCallback {
         $wrapper_scriptblock = {
             param($result)
 
-            $shared_state = $result.AsyncState
-            $listener =  $shared_state.Listener
+            $callback_state = $result.AsyncState
+            $listener =  $callback_state.Listener
             $context = $listener.EndGetContext($result)
-            $listener.BeginGetContext($shared_state.Callback,$shared_state)
+            
+            "$(get-date -format 'yyyy-MM-dd HH:mm:ss fffff') Callback is: $(Get-EventSubscriber | fl -Property * | Out-String )" >> C:\Users\Tim\Documents\callback.log
+            
+            $listener.BeginGetContext($callback_state.Callback,$callback_state)
             $response = $context.Response
             $request = $context.Request
 
+            "$(get-date -format 'yyyy-MM-dd HH:mm:ss fffff') Callback for $($request.rawurl) on wait handle: $($result.AsyncWaitHandle.Handle) in runspace $(([System.Management.Automation.Runspaces.Runspace]::DefaultRunspace).InstanceId.guid)" >> C:\Users\Tim\Documents\callback.log
+            
             $output_content = New-Object -TypeName PSObject -Property @{
                 StatusCode = New-Object -TypeName System.Net.HttpStatusCode
                 Raw = $null
@@ -115,8 +121,6 @@ function ConvertTo-HTTPCallback {
             catch {
                 $output_content.StatusCode = [System.Net.HttpStatusCode]::InternalServerError    
             }
-
-            "$(get-date -format 'yyyy-MM-dd HH:mm:ss fffff') output $($output_content | ft | Out-String)" >> C:\users\tim\Documents\callback.log
 
             $response.StatusCode = $output_content.StatusCode
             $content_bytes = [Text.Encoding]::UTF8.GetBytes($output_content.Raw)

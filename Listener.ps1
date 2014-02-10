@@ -28,9 +28,9 @@
     process {
         if (-not $script:HTTP_listeners.$Prefix.RunspacePool) {
             $runspaces = Initialize-HTTPRunspace -Prefix $Prefix -SharedState $script:HTTP_listeners
-            $script:HTTP_listeners.$Prefix.RunspacePool = $runspaces.Pool
+            #$script:HTTP_listeners.$Prefix.RunspacePool = $runspaces.Pool
             $script:HTTP_listeners.$Prefix.Powershells = $runspaces.Powershells
-            $script:HTTP_listeners.$Prefix.Callback =  New-ScriptblockCallBack -Scriptblock (ConvertTo-HTTPCallback -Scriptblock $scriptblock)
+            $script:HTTP_listeners.$Prefix.Callback =  ConvertTo-HTTPCallback -Scriptblock $scriptblock
             $script:HTTP_listeners.$Prefix.Listener = New-Object -TypeName System.Net.HttpListener
             $script:HTTP_listeners.$Prefix.Listener.Prefixes.Add($Prefix)
 
@@ -63,8 +63,17 @@ function Initialize-HTTPRunspace {
     begin {
          $scriptblock = {
             param($Prefix,$SharedState)
+            
+            $callback = New-ScriptblockCallBack -Scriptblock $SharedState.$Prefix.Callback
+
+            $callback_state = New-Object -TypeName psobject -Property @{
+                'Listener' = $SharedState.$Prefix.Listener
+                'Callback' = $callback
+            }
                         
-            $result = $SharedState.$Prefix.Listener.BeginGetContext($SharedState.$Prefix.Callback,$SharedState.$Prefix)
+            $result = $SharedState.$Prefix.Listener.BeginGetContext($callback,$callback_state)
+
+            "$(get-date -format 'yyyy-MM-dd HH:mm:ss fffff') Runspace on wait handle: $($result.AsyncWaitHandle.Handle) in runspace $(([System.Management.Automation.Runspaces.Runspace]::DefaultRunspace).InstanceId.guid)" >> C:\Users\Tim\Documents\runspace.log
 
             while ($SharedState.$Prefix.Listener.Listening) {
                 Start-Sleep -Seconds 1
@@ -74,21 +83,22 @@ function Initialize-HTTPRunspace {
 
     process {
         $session_state = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
-        $runspace_pool = [RunspaceFactory]::CreateRunspacePool(1, $Throttle, $session_state, $Host)
-        $runspace_pool.open()
+        #$runspace_pool = [RunspaceFactory]::CreateRunspacePool(1, $Throttle, $session_state, $Host)
+        #$runspace_pool.Open()
         $powershells = @()
 
 
         0..($Throttle-1) | 
             ForEach-Object {
                 $powershells += [powershell]::Create()
-                $powershells[$_].RunspacePool = $runspace_pool
+                #$powershells[$_].RunspacePool = $runspace_pool
                 $powershells[$_].AddScript($scriptblock).AddArgument($Prefix).AddArgument($SharedState)
+                $powershells[$_].Runspace = [RunspaceFactory]::CreateRunspace($session_state).Open()
             }
         
 
         New-Object -TypeName PSObject -Property @{
-            'Pool' = $runspace_pool
+            #'Pool' = $runspace_pool
             'Powershells' = $powershells
         }
     }
@@ -132,7 +142,7 @@ function Test-HTTPListener {
     begin {}
 
     process {
-        if (-not $script:HTTP_listeners.$Prefix.RunspacePool) {
+        if (-not $script:HTTP_listeners.$Prefix.Powershells) {
             $false
         } elseif (-not $script:HTTP_listeners.$Prefix.Callback) {
             $false
@@ -194,8 +204,8 @@ function Remove-HTTPListener {
                 $_.Dispose()
             }
         $script:HTTP_listeners.$Prefix.Powershells = $null
-        $script:HTTP_listeners.$Prefix.RunspacePool.Dispose()
-        $script:HTTP_listeners.$Prefix.RunspacePool = $null
+        #$script:HTTP_listeners.$Prefix.RunspacePool.Dispose()
+        #$script:HTTP_listeners.$Prefix.RunspacePool = $null
         $script:HTTP_listeners.Remove($Prefix)
     }
 
