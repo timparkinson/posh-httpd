@@ -79,7 +79,7 @@ Describe "Initialize-HTTPRunspace" {
 
     Context "when called" {
 
-        $return = Initialize-HTTPRunspace -Prefix $prefix -Hash $hash
+        $return = Initialize-HTTPRunspace -Prefix $prefix -SharedState $hash
         It "should return a runspace pool" {
             $return.Pool.GetType().Name | Should Be 'RunspacePool'
         }

@@ -78,3 +78,58 @@
 
     end {}
 }
+
+function ConvertTo-HTTPCallback {
+    [CmdletBinding()]
+
+    param(
+        [Parameter(Mandatory=$true)]
+        [Scriptblock]$Scriptblock
+    )
+
+    begin {
+        $wrapper_scriptblock = {
+            param($result)
+
+            $shared_state = $result.AsyncState
+            $listener =  $shared_state.Listener
+            $context = $listener.EndGetContext($result)
+            $listener.BeginGetContext($shared_state.Callback,$shared_state)
+            $response = $context.Response
+            $request = $context.Request
+
+            $output_content = New-Object -TypeName PSObject -Property @{
+                StatusCode = New-Object -TypeName System.Net.HttpStatusCode
+                Raw = $null
+            }
+
+            try {
+                $output_content.Raw = Invoke-Command -Scriptblock {
+                    param($request)
+        
+                    REPLACEWITHSCRIPTBLOCK
+                    
+                } -ArgumentList $request
+                 $output_content.StatusCode = [System.Net.HttpStatusCode]::OK
+            }
+            catch {
+                $output_content.StatusCode = [System.Net.HttpStatusCode]::InternalServerError    
+            }
+
+            "$(get-date -format 'yyyy-MM-dd HH:mm:ss fffff') output $($output_content | ft | Out-String)" >> C:\users\tim\Documents\callback.log
+
+            $response.StatusCode = $output_content.StatusCode
+            $content_bytes = [Text.Encoding]::UTF8.GetBytes($output_content.Raw)
+            $response.ContentLength64 = $content_bytes.Length
+            $response.OutputStream.Write($content_bytes, 0, $content_bytes.Length)
+            $response.close()
+        }
+    }
+
+    process {
+        [scriptblock]::Create($wrapper_scriptblock.ToString().Replace('REPLACEWITHSCRIPTBLOCK',$Scriptblock.ToString()))
+
+    }
+
+    end {}
+}

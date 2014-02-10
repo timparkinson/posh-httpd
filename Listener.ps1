@@ -27,10 +27,10 @@
 
     process {
         if (-not $script:HTTP_listeners.$Prefix.RunspacePool) {
-            $runspaces = Initialize-HTTPRunspace -Prefix $Prefix -Hash $script:HTTP_listeners
+            $runspaces = Initialize-HTTPRunspace -Prefix $Prefix -SharedState $script:HTTP_listeners
             $script:HTTP_listeners.$Prefix.RunspacePool = $runspaces.Pool
             $script:HTTP_listeners.$Prefix.Powershells = $runspaces.Powershells
-            $script:HTTP_listeners.$Prefix.Callback = New-ScriptblockCallBack -Scriptblock $Scriptblock
+            $script:HTTP_listeners.$Prefix.Callback =  New-ScriptblockCallBack -Scriptblock (ConvertTo-HTTPCallback -Scriptblock $scriptblock)
             $script:HTTP_listeners.$Prefix.Listener = New-Object -TypeName System.Net.HttpListener
             $script:HTTP_listeners.$Prefix.Listener.Prefixes.Add($Prefix)
 
@@ -55,16 +55,21 @@ function Initialize-HTTPRunspace {
         [Parameter(Mandatory=$true)]
         $Prefix,
         [Parameter(Mandatory=$true)]
-        $Hash,
+        $SharedState,
         [Parameter()]
         [int]$Throttle = 4
     )
 
     begin {
          $scriptblock = {
-            param($Prefix,$HTTP_listener)
-            "$(get-date -format 'yyyy-MM-dd HH:mm:ss fffff') In Runspace with $Prefix" >> C:\users\tim\Documents\runspace.log
-        }
+            param($Prefix,$SharedState)
+                        
+            $result = $SharedState.$Prefix.Listener.BeginGetContext($SharedState.$Prefix.Callback,$SharedState.$Prefix)
+
+            while ($SharedState.$Prefix.Listener.Listening) {
+                Start-Sleep -Seconds 1
+            }
+         }
     }
 
     process {
@@ -78,7 +83,7 @@ function Initialize-HTTPRunspace {
             ForEach-Object {
                 $powershells += [powershell]::Create()
                 $powershells[$_].RunspacePool = $runspace_pool
-                $powershells[$_].AddScript($scriptblock).AddArgument($Prefix).AddArgument($hash)
+                $powershells[$_].AddScript($scriptblock).AddArgument($Prefix).AddArgument($SharedState)
             }
         
 
