@@ -1,5 +1,5 @@
-http
-====
+posh-httpd
+==========
 
 Simple Powershell HTTP module, uses HTTP.sys driver and runs asynchronously. Should be as simple as doing:
 
