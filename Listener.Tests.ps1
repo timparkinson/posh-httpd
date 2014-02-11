@@ -106,4 +106,18 @@ Describe "Stop-HTTPListener" {
     }
 }
 
+Describe "Restart-HTTPListener" {
+    $prefix = 'http://someprefix:8080/'
+
+    Mock -verifiable Start-HTTPListener {}
+    Mock -verifiable Stop-HTTPListener {}
+
+    Restart-HTTPListener -Prefix $Prefix
+
+    Context "when called" {
+        It "should run start and stop" {
+            Assert-VerifiableMocks
+        }
+    }
+}
 

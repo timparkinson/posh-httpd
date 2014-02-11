@@ -233,3 +233,21 @@ function Test-HTTPListenerListening {
 
     end {}
 }
+
+function Restart-HTTPListener {
+    [CmdletBinding()]
+
+    param(
+        [Parameter(Mandatory=$true)]
+        $Prefix
+    )
+
+    begin {}
+
+    process {
+        Stop-HTTPListener -Prefix $Prefix
+        Start-HTTPListener -Prefix $Prefix
+    }  
+    
+    end {}
+}
