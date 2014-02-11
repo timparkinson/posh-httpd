@@ -73,8 +73,6 @@ function Initialize-HTTPRunspace {
                         
             $result = $SharedState.$Prefix.Listener.BeginGetContext($callback,$callback_state)
 
-            "$(get-date -format 'yyyy-MM-dd HH:mm:ss fffff') Runspace on wait handle: $($result.AsyncWaitHandle.Handle) in runspace $(([System.Management.Automation.Runspaces.Runspace]::DefaultRunspace).InstanceId.guid)" >> C:\Users\Tim\Documents\runspace.log
-
             while ($SharedState.$Prefix.Listener.Listening) {
                 Start-Sleep -Seconds 1
             }

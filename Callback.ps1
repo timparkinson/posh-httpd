@@ -96,13 +96,9 @@ function ConvertTo-HTTPCallback {
             $listener =  $callback_state.Listener
             $context = $listener.EndGetContext($result)
             
-            "$(get-date -format 'yyyy-MM-dd HH:mm:ss fffff') Callback is: $(Get-EventSubscriber | fl -Property * | Out-String )" >> C:\Users\Tim\Documents\callback.log
-            
             $listener.BeginGetContext($callback_state.Callback,$callback_state)
             $response = $context.Response
             $request = $context.Request
-
-            "$(get-date -format 'yyyy-MM-dd HH:mm:ss fffff') Callback for $($request.rawurl) on wait handle: $($result.AsyncWaitHandle.Handle) in runspace $(([System.Management.Automation.Runspaces.Runspace]::DefaultRunspace).InstanceId.guid)" >> C:\Users\Tim\Documents\callback.log
             
             $output_content = New-Object -TypeName PSObject -Property @{
                 StatusCode = New-Object -TypeName System.Net.HttpStatusCode

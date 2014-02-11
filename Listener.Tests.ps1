@@ -41,10 +41,6 @@ Describe "Add-HTTPListener" {
         #    "variable:script:HTTP_listeners.$Prefix" | Should Exist
         #}
 
-        It "should set the RunspacePool variable" {
-            $script:HTTP_listeners.$Prefix.RunspacePool | Should Not BeNullOrEmpty
-        }
-
         It "should set the Listener variable" {
             $script:HTTP_listeners.$Prefix.Listener | Should Not BeNullOrEmpty
         }
@@ -80,9 +76,6 @@ Describe "Initialize-HTTPRunspace" {
     Context "when called" {
 
         $return = Initialize-HTTPRunspace -Prefix $prefix -SharedState $hash
-        It "should return a runspace pool" {
-            $return.Pool.GetType().Name | Should Be 'RunspacePool'
-        }
 
         It "should return an array of Powershells" {
             $return.Powershells.GetType().Name | Should Be "Object[]"
