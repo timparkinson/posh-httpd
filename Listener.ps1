@@ -8,7 +8,9 @@
         [Parameter(Mandatory=$true)]
         [Scriptblock]$Scriptblock,
         [Parameter()]
-        [Switch]$Start = $true
+        [Switch]$Start = $true,
+        [Parameter()]
+        [Int]$Throttle = 4
     )
 
     begin {
@@ -27,7 +29,7 @@
 
     process {
         if (-not $script:HTTP_listeners.$Prefix.RunspacePool) {
-            $runspaces = Initialize-HTTPRunspace -Prefix $Prefix -SharedState $script:HTTP_listeners
+            $runspaces = Initialize-HTTPRunspace -Prefix $Prefix -SharedState $script:HTTP_listeners -Throttle $Throttle
             #$script:HTTP_listeners.$Prefix.RunspacePool = $runspaces.Pool
             $script:HTTP_listeners.$Prefix.Powershells = $runspaces.Powershells
             $script:HTTP_listeners.$Prefix.Callback =  ConvertTo-HTTPCallback -Scriptblock $scriptblock
