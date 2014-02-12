@@ -99,27 +99,28 @@ function ConvertTo-HTTPCallback {
             $listener.BeginGetContext($callback_state.Callback,$callback_state)
             $response = $context.Response
             $request = $context.Request
-            
-            $output_content = New-Object -TypeName PSObject -Property @{
-                StatusCode = New-Object -TypeName System.Net.HttpStatusCode
-                Raw = $null
-            }
 
             try {
-                $output_content.Raw = Invoke-Command -Scriptblock {
+                $output_content = Invoke-Command -Scriptblock {
                     param($request)
         
                     REPLACEWITHSCRIPTBLOCK
                     
                 } -ArgumentList $request
-                 $output_content.StatusCode = [System.Net.HttpStatusCode]::OK
+                 
             }
             catch {
-                $output_content.StatusCode = [System.Net.HttpStatusCode]::InternalServerError    
+                $output_content = @{
+                    StatusCode = [System.Net.HttpStatusCode]::InternalServerError 
+                    Content = ''
+                    ContentType =''
+                }   
             }
 
+            $output_content = $output_content | ConvertTo-HTTPOutput
+
             $response.StatusCode = $output_content.StatusCode
-            $content_bytes = [Text.Encoding]::UTF8.GetBytes($output_content.Raw)
+            $content_bytes = [Text.Encoding]::UTF8.GetBytes($output_content.Content)
             $response.ContentLength64 = $content_bytes.Length
             $response.OutputStream.Write($content_bytes, 0, $content_bytes.Length)
             $response.close()
