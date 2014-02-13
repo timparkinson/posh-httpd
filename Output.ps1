@@ -55,13 +55,17 @@ function ConvertTo-HTTPOutput {
                         }
 
                     } else {
+
                         $output.content = $InputObject | Out-String
+
                     }
                 }
 
                 default {
                     
-                    if ($Input){
+                    if ($InputObject.GetType().BaseType.ToString() -eq  'System.IO.Stream') {
+                            $output.Content = $InputObject
+                    } elseif ($Input){
                         #$Input.reset()
                         $output.Content = @($Input) | Out-String
                     } else {
