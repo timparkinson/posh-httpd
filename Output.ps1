@@ -46,19 +46,30 @@ function ConvertTo-HTTPOutput {
                 }
 
                 'Hashtable' {
-                    if ($InputObject.Content -and $InputObject.ContentType) {
-                        $output.Content = $InputObject.Content
-                        $output.ContentType = $InputObject.ContentType
+ 
+                    if ($InputObject.StatusCode) {
                         
-                        if ($InputObject.StatusCode) {
-                            $output.StatusCode = $InputObject.StatusCode
-                        }
-
-                    } else {
-
-                        $output.content = $InputObject | Out-String
-
+                        $output.StatusCode = $InputObject.StatusCode
+                        $set_something = $true
                     }
+
+                    if ($InputObject.Content) {
+                        
+                        $output.Content = $InputObject.Content
+                        $set_something = $true
+                    }
+
+                    if ($InputObject.ContentType) {
+                        
+                        $output.ContentType = $InputObject.ContentType
+                        $set_something = $true
+                    }
+
+                    if (-not $set_something) {
+                        
+                        $output.content = $InputObject | Out-String                    
+                    }
+
                 }
 
                 default {

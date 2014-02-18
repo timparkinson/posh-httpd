@@ -8,6 +8,7 @@
         [Parameter(Mandatory=$true)]
         [Scriptblock]$Scriptblock,
         [Parameter()]
+        [Scriptblock]$SetupScriptblock,
         [Switch]$Start = $true,
         [Parameter()]
         [Int]$Throttle = 4
@@ -33,6 +34,7 @@
             #$script:HTTP_listeners.$Prefix.RunspacePool = $runspaces.Pool
             $script:HTTP_listeners.$Prefix.Powershells = $runspaces.Powershells
             $script:HTTP_listeners.$Prefix.Callback =  ConvertTo-HTTPCallback -Scriptblock $scriptblock
+            $script:HTTP_listeners.$Prefix.SetupScriptblock = $SetupScriptblock
             $script:HTTP_listeners.$Prefix.Listener = New-Object -TypeName System.Net.HttpListener
             $script:HTTP_listeners.$Prefix.Listener.Prefixes.Add($Prefix)
 
@@ -64,8 +66,13 @@ function Initialize-HTTPRunspace {
 
     begin {
          $scriptblock = {
-            param($Prefix,$SharedState)
+            param($Prefix,$SharedState)           
             
+            if ($SharedState.$Prefix.SetupScriptblock) {
+                Invoke-Command -NoNewScope -ScriptBlock $SharedState.$Prefix.SetupScriptblock
+            }
+            
+
             $callback = New-ScriptblockCallBack -Scriptblock $SharedState.$Prefix.Callback
 
             $callback_state = New-Object -TypeName psobject -Property @{
@@ -79,6 +86,7 @@ function Initialize-HTTPRunspace {
                 Start-Sleep -Seconds 1
             }
          }
+
     }
 
     process {

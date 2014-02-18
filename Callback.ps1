@@ -99,7 +99,7 @@ function ConvertTo-HTTPCallback {
             $listener.BeginGetContext($callback_state.Callback,$callback_state)
             $response = $context.Response
             $request = $context.Request
-
+            
             try {
                 $output_content = Invoke-Command -Scriptblock {
                     param($request)
@@ -120,26 +120,24 @@ function ConvertTo-HTTPCallback {
             $output_content = $output_content | ConvertTo-HTTPOutput
 
             $response.StatusCode = $output_content.StatusCode
-            
-            if ($output_content.Content.GetType().BaseType.ToString() -eq  'System.IO.Stream') {
-                $response.ContentLength64 = $output_content.Content.Length
-                $output_content.Content.CopyTo($response.OutputStream)
+            if ($output_content.Content) {
+                if ($output_content.Content.GetType().BaseType.ToString() -eq  'System.IO.Stream') {
+                    $response.ContentLength64 = $output_content.Content.Length
+                    $output_content.Content.CopyTo($response.OutputStream)
 
-            } else {
+                } else {
 
-                $content_bytes = [Text.Encoding]::UTF8.GetBytes($output_content.Content)
-                $response.ContentLength64 = $content_bytes.Length
-                $response.OutputStream.Write($content_bytes, 0, $content_bytes.Length)
-
+                    $content_bytes = [Text.Encoding]::UTF8.GetBytes($output_content.Content)
+                    $response.ContentLength64 = $content_bytes.Length
+                    $response.OutputStream.Write($content_bytes, 0, $content_bytes.Length)
+                }
             }
-
             $response.close()
         }
     }
 
     process {
         [scriptblock]::Create($wrapper_scriptblock.ToString().Replace('REPLACEWITHSCRIPTBLOCK',$Scriptblock.ToString()))
-
     }
 
     end {}
