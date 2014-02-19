@@ -52,7 +52,7 @@ function ConvertTo-HTTPRoutePattern {
     begin {}
 
     process {
-        
+        $Pattern = $Pattern -replace '\.', '\.'
 
         $Pattern | 
             Select-String -AllMatches -Pattern '(?<!\?):(\w+)' | 
@@ -76,7 +76,7 @@ function ConvertTo-HTTPRoutePattern {
                         }
                 }
 
-        $param_num = 0
+        $param_num = -1
         $param_base = 'splatted_param_'
         $Pattern | 
             Select-String -AllMatches -Pattern '\*' | 
@@ -149,11 +149,12 @@ function Get-HTTPRouter {
                         $params.splat = @()
 
                         $route_matches = $matches 
-                        $params.splat = $route_matches.keys | 
+                        $route_matches.Keys | 
                             Where-Object {$_ -ne '0' -and $_ -match 'splatted_param_'} |
-                                ForEach-Object {
-                                    $route_matches.$_
-                            }
+                                Sort-Object |
+                                    ForEach-Object {
+                                        $params.splat += $route_matches.$_
+                                }
                             $route_matches.keys | 
                                 Where-Object {$_ -ne '0' -and $_ -notmatch 'splatted_param_'} |
                                     ForEach-Object {
