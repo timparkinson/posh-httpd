@@ -165,3 +165,33 @@ function Register-URLPrefix {
 
     end {}
 }
+function Test-IsAdministrator {
+<#
+    .SYNOPSIS
+        Tests whether the user is an admistrator.
+    
+    .DESCRIPTION
+        Tests whether the current user is an administrator
+
+    .INPUTS
+        None
+
+    .OUTPUTS
+        Boolean
+#>
+    [CmdletBinding()]
+
+    param(
+    )
+
+    begin {
+
+    }
+
+    process {
+        $user = [Security.Principal.WindowsIdentity]::GetCurrent()
+        (New-Object Security.Principal.WindowsPrincipal $User).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
+    }
+
+    end {}
+}
