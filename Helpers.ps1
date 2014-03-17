@@ -118,3 +118,50 @@ function Get-CurrentUserName {
 
     end {}
 }
+
+function Register-URLPrefix {
+<#
+    .SYNOPSIS
+        Registers a URL Prefix
+
+    .DESCRIPTION
+        Requires elevated privileges to register a URL prefix using netsh
+
+    .PARAMETER Prefix
+        The prefix to register
+
+    .PARAMETER User
+        The user (DOMAIN\User) to register the prefix for
+
+    .INPUTS
+        None
+
+    .OUTPUTS
+        None
+#>
+
+    [CmdletBinding()]
+
+    param([Parameter(Mandatory=$true)]
+          [String]$Prefix,
+          [Parameter()]
+          [String]$User=(Get-CurrentUserName)
+    )
+
+    begin {
+        if (-not (Test-IsAdministrator)) {
+            Write-Error -Message  "Elevated privileges required." -ErrorAction Stop
+        }
+    }
+
+    process {
+        $netsh_cmd = "netsh http add urlacl url=$Prefix user=$User"
+
+        Write-Verbose "Registering URL prefix using $netsh_cmd"
+        $result = Invoke-Expression -Command $netsh_cmd
+
+        $result -match 'URL reservation successfully added'
+    }
+
+    end {}
+}
