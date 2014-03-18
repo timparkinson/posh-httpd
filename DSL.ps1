@@ -155,28 +155,39 @@ function Get-HTTPRouter {
                                     ForEach-Object {
                                         $params.splat += $route_matches.$_
                                 }
-                            $route_matches.keys | 
-                                Where-Object {$_ -ne '0' -and $_ -notmatch 'splatted_param_'} |
-                                    ForEach-Object {
-                                        $params.$_ = $route_matches.$_
-                                    }
-
-                            # call the function
-                            
-                            try {
-                                & $route.Function $request $params
-                            
-                            } catch {
-                                
-                                @{
-                                    
-                                    'Content' = ''
-                                    'ContentType' = ''
-                                    'StatusCode' = [System.Net.HttpStatusCode]::InternalServerError
+                        $route_matches.keys | 
+                            Where-Object {$_ -ne '0' -and $_ -notmatch 'splatted_param_'} |
+                                ForEach-Object {
+                                    $params.$_ = $route_matches.$_
                                 }
+                        
+                        $inputstream_length = $Request.ContentLength64
+                        $inputstream_buffer = New-Object "byte[]" $inputstream_length
+                        [void]$Request.InputStream.Read($inputstream_buffer,0,$inputstream_length)
+                        $body = [System.Text.Encoding]::ASCII.GetString($inputstream_buffer)
+
+                        $params.body = @{}
+                        $body -split '\\u0026' | 
+                            ForEach-Object {
+                                $split_key_value = $_ -split '='
+                                $params.body.$split_key_value[0] = $split_key_value[1]
                             }
+
+                        # call the function
+                            
+                        try {
+                            & $route.Function $request $params 
+                            
+                        } catch {
                                 
-                            break    
+                            @{
+                                    
+                                'Content' = ''
+                                'ContentType' = ''
+                                'StatusCode' = [System.Net.HttpStatusCode]::InternalServerError
+                            }
+                        }                                   
+                        break    
                     } else {
                         $found_match = $false
                     }
