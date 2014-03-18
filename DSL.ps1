@@ -119,7 +119,7 @@ function Get-HTTPRouter {
 
         $($routes | 
             ForEach-Object {
-                $function_name = "Invoke-HTTPRoute$([System.BitConverter]::ToString($md5.ComputeHash($utf8.GetBytes($_.Pattern))))"
+                $function_name = "Invoke-HTTPRoute$($_.Method)$([System.BitConverter]::ToString($md5.ComputeHash($utf8.GetBytes($_.Pattern))))"
                 "`$global:routes += @{'Method'='$($_.Method)';'Pattern'='$($_.Pattern)';'Scriptblock'={$($_.Scriptblock.ToString())};'Function'='$function_name'}"
 
                 @" 
