@@ -163,11 +163,11 @@ function Get-HTTPRouter {
                         
                         $inputstream_length = $Request.ContentLength64
                         $inputstream_buffer = New-Object "byte[]" $inputstream_length
-                        [void]$Request.InputStream.Read($inputstream_buffer,0,$inputstream_length)
+                        $Request.InputStream.Read($inputstream_buffer,0,$inputstream_length) | Out-Null
                         $body = [System.Text.Encoding]::ASCII.GetString($inputstream_buffer)
 
                         $params.body = @{}
-                        $body -split '\\u0026' | 
+                        $body -split '&' | 
                             ForEach-Object {
                                 $split_key_value = $_ -split '='
                                 $params.body.$split_key_value[0] = $split_key_value[1]
