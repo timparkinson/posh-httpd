@@ -170,7 +170,7 @@ function Get-HTTPRouter {
                         $body -split '&' | 
                             ForEach-Object {
                                 $split_key_value = $_ -split '='
-                                $params.body.$($split_key_value[0]) = $split_key_value[1]
+                                $params.body.$($split_key_value[0]) = [System.Web.Utility]::UrlDecode($split_key_value[1])
                             }
 
                         # call the function
