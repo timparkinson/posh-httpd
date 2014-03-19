@@ -13,7 +13,7 @@
         [Parameter()]
         [Int]$Throttle = 4,
         [Parameter()]
-         System.Net.AuthenticationSchemes]$AuthenticationScheme
+        [System.Net.AuthenticationSchemes]$AuthenticationScheme
     )
 
     begin {
