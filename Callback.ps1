@@ -100,13 +100,15 @@ function ConvertTo-HTTPCallback {
             $response = $context.Response
             $request = $context.Request
             
+            
+
             try {
                 $output_content = Invoke-Command -Scriptblock {
-                    param($request)
+                    param($request, $identity)
         
                     REPLACEWITHSCRIPTBLOCK
                     
-                } -ArgumentList $request
+                } -ArgumentList $request, $context.User
                  
             }
             catch {
