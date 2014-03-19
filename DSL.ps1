@@ -103,7 +103,9 @@ function Get-HTTPRouter {
 
     param(
         [Parameter()]
-        $Path=(Join-Path -path $Pwd -ChildPath 'routes.ps1')
+        $Path=(Join-Path -path $Pwd -ChildPath 'routes.ps1'),
+        [Parameter()]
+        $HelperPath=(Join-Path -path $Pwd -ChildPath 'helpers.ps1')
     )
 
     begin {}
@@ -133,6 +135,10 @@ function Get-HTTPRouter {
             })
 
 "@
+
+        if ((Test-Path -Path $HelperPath)) {
+            $setup_scriptblock_as_string += Get-Content -Raw -Path $HelperPath
+        }
 
         $callback_scriptblock = {
             $matching_route_methods = ($global:routes |
@@ -221,15 +227,24 @@ function Initialize-HTTPRouter {
         [Parameter(Mandatory=$true)]
         $Prefix,
         [Parameter()]
-        $Path=(Join-Path -path $Pwd -ChildPath 'routes.ps1')
+        $Path=(Join-Path -path $Pwd -ChildPath 'routes.ps1'),
+        [Parameter()]
+        $ConfigPath=(Join-Path -path $Pwd -ChildPath 'config.ps1')
     )
 
-    begin {}
+    begin {
+        if ((Test-Path -Path $ConfigPath)) {
+            . $ConfigPath
+        }
+    }
 
     process {
         $scriptblocks = Get-HTTPRouter -Path $Path
-
-        Add-HTTPListener -Prefix $Prefix -Scriptblock $scriptblocks.CallbackScriptblock -SetupScriptblock $scriptblocks.SetupScriptblock
+        if ($AuthenticationScheme) {
+            Add-HTTPListener -Prefix $Prefix -Scriptblock $scriptblocks.CallbackScriptblock -SetupScriptblock $scriptblocks.SetupScriptblock -AuthenticationScheme $AuthenticationScheme
+        } else {
+            Add-HTTPListener -Prefix $Prefix -Scriptblock $scriptblocks.CallbackScriptblock -SetupScriptblock $scriptblocks.SetupScriptblock
+        }
     }
 
     end {}

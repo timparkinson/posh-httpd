@@ -11,7 +11,9 @@
         [Scriptblock]$SetupScriptblock,
         [Switch]$Start = $true,
         [Parameter()]
-        [Int]$Throttle = 4
+        [Int]$Throttle = 4,
+        [Parameter()]
+         System.Net.AuthenticationSchemes]$AuthenticationScheme
     )
 
     begin {
@@ -37,6 +39,10 @@
             $script:HTTP_listeners.$Prefix.SetupScriptblock = $SetupScriptblock
             $script:HTTP_listeners.$Prefix.Listener = New-Object -TypeName System.Net.HttpListener
             $script:HTTP_listeners.$Prefix.Listener.Prefixes.Add($Prefix)
+
+            if ($AuthenticationScheme) {
+                $script:HTTP_listeners.$Prefix.Listener.AuthenticationSchemes = $AuthenticationScheme
+            }
 
             if ($Start) {
                 Start-HTTPListener -Prefix $Prefix
