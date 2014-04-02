@@ -4,3 +4,5 @@ Get-ChildItem -Path "$here\*" -Include "*.ps1" -Exclude "*.Tests.ps1" |
     ForEach-Object {
         . $_.FullName
     }
+
+Add-Type -AssemblyName System.Web
