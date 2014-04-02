@@ -114,7 +114,7 @@ function ConvertTo-HTTPCallback {
             catch {
                 $output_content = @{
                     StatusCode = [System.Net.HttpStatusCode]::InternalServerError 
-                    Content = ''
+                    Content = "$_"
                     ContentType =''
                 }   
             }
