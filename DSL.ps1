@@ -248,7 +248,7 @@ function Initialize-HTTPRouter {
             $parameters.AuthenticationScheme = $AuthenticationScheme
         } 
 
-        if (LogPath) {
+        if ($LogPath) {
             $parameters.LogPath = $LogPath
         }
 
