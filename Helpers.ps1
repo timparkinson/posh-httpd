@@ -195,3 +195,32 @@ function Test-IsAdministrator {
 
     end {}
 }
+
+function Write-HTTPLog {
+    [CmdletBinding()]
+
+    param(
+        [Parameter(Mandatory=$true)]
+        $Prefix,
+        [Parameter(Mandatory=$true)]
+        $Message
+    )
+
+    begin {   
+    }
+
+    process {
+        if ($script:HTTP_listeners.$Prefix.LogPath) {
+            if ($script:HTTP_listeners.$Prefix.LogMutex) {
+                New-Object System.Threading.Mutex $false,"$Prefix`_log_mutex"
+            }
+        
+            $script:HTTP_listeners.$Prefix.LogMutex.WaitOne() | Out-Null
+            $Message | Out-File -Append $script:HTTP_listeners.$Prefix.LogPath
+            $script:HTTP_listeners.$Prefix.LogMutex.ReleaseMutex()
+        }
+
+    }
+
+    end {}
+}

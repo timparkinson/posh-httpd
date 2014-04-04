@@ -240,11 +240,20 @@ function Initialize-HTTPRouter {
 
     process {
         $scriptblocks = Get-HTTPRouter -Path $Path
+
+        $parameters = @{}
+
+
         if ($AuthenticationScheme) {
-            Add-HTTPListener -Prefix $Prefix -Scriptblock $scriptblocks.CallbackScriptblock -SetupScriptblock $scriptblocks.SetupScriptblock -AuthenticationScheme $AuthenticationScheme
-        } else {
-            Add-HTTPListener -Prefix $Prefix -Scriptblock $scriptblocks.CallbackScriptblock -SetupScriptblock $scriptblocks.SetupScriptblock
+            $parameters.AuthenticationScheme = $AuthenticationScheme
+        } 
+
+        if (LogPath) {
+            $parameters.LogPath = $LogPath
         }
+
+        Add-HTTPListener -Prefix $Prefix -Scriptblock $scriptblocks.CallbackScriptblock -SetupScriptblock $scriptblocks.SetupScriptblock @parameters
+
     }
 
     end {}

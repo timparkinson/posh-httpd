@@ -13,7 +13,9 @@
         [Parameter()]
         [Int]$Throttle = 4,
         [Parameter()]
-        [System.Net.AuthenticationSchemes]$AuthenticationScheme
+        [System.Net.AuthenticationSchemes]$AuthenticationScheme,
+        [Parameter()]
+        $LogPath
     )
 
     begin {
@@ -39,6 +41,7 @@
             $script:HTTP_listeners.$Prefix.SetupScriptblock = $SetupScriptblock
             $script:HTTP_listeners.$Prefix.Listener = New-Object -TypeName System.Net.HttpListener
             $script:HTTP_listeners.$Prefix.Listener.Prefixes.Add($Prefix)
+            $script:HTTP_listeners.$Prefix.LogPath = $LogPath
 
             if ($AuthenticationScheme) {
                 $script:HTTP_listeners.$Prefix.Listener.AuthenticationSchemes = $AuthenticationScheme
@@ -100,7 +103,6 @@ function Initialize-HTTPRunspace {
         #$runspace_pool = [RunspaceFactory]::CreateRunspacePool(1, $Throttle, $session_state, $Host)
         #$runspace_pool.Open()
         $powershells = @()
-
 
         0..($Throttle-1) | 
             ForEach-Object {
