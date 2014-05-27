@@ -134,7 +134,7 @@ function ConvertTo-HTTPCallback {
                     $response.OutputStream.Write($content_bytes, 0, $content_bytes.Length)
                 }
             }
-            Write-HTTPLog -Prefix $listener.Prefixes[0] -Message "$(Get-Date -UFormat '%Y-%m-%d %H:%M:%S') server=$($env:COMPUTERNAME) URL=$($request.RawUrl) status=$($response.StatusCode) bytes=$($response.ContentLength64)"
+            #Write-HTTPLog -Prefix $listener.Prefixes[0] -Message "$(Get-Date -UFormat '%Y-%m-%d %H:%M:%S') server=$($env:COMPUTERNAME) URL=$($request.RawUrl) status=$($response.StatusCode) bytes=$($response.ContentLength64)"
             $response.close()
         }
     }
