@@ -92,7 +92,10 @@ function ConvertTo-HTTPCallback {
         $wrapper_scriptblock = {
             param($result)
 
+
             $callback_state = $result.AsyncState
+            if ($callback_state.Logs.Debug) {Write-HTTPLog -Prefix $Prefix -Level Debug -Path $callback_state.Logs.Debug -Message "$(Get-Date -UFormat '%Y-%m-%dT%H:%M:%S') Callback state: $($callback_state | Format-List | Out-String)"}
+
             $listener =  $callback_state.Listener
             $context = $listener.EndGetContext($result)
             
@@ -134,7 +137,8 @@ function ConvertTo-HTTPCallback {
                     $response.OutputStream.Write($content_bytes, 0, $content_bytes.Length)
                 }
             }
-            #Write-HTTPLog -Prefix $listener.Prefixes[0] -Message "$(Get-Date -UFormat '%Y-%m-%d %H:%M:%S') server=$($env:COMPUTERNAME) URL=$($request.RawUrl) status=$($response.StatusCode) bytes=$($response.ContentLength64)"
+            
+            if ($callback_state.Logs.Access) {Write-HTTPLog -Prefix $Prefix -Level Access -Path $callback_state.Logs.Access -Message "$(Get-Date -UFormat '%Y-%m-%d %H:%M:%S') server=$($env:COMPUTERNAME) URL=$($request.RawUrl) status=$($response.StatusCode) bytes=$($response.ContentLength64)"}
             $response.close()
         }
     }

@@ -248,8 +248,8 @@ function Initialize-HTTPRouter {
             $parameters.AuthenticationScheme = $AuthenticationScheme
         } 
 
-        if ($LogPath) {
-            $parameters.LogPath = $LogPath
+        if ($Log) {
+            $parameters.Log = $Log
         }
 
         Add-HTTPListener -Prefix $Prefix -Scriptblock $scriptblocks.CallbackScriptblock -SetupScriptblock $scriptblocks.SetupScriptblock @parameters

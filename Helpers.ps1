@@ -203,23 +203,23 @@ function Write-HTTPLog {
         [Parameter(Mandatory=$true)]
         $Prefix,
         [Parameter(Mandatory=$true)]
-        $Message
+        $Message,
+        [Parameter()]
+        [ValidateSet('Access','Debug')]
+        $Level = 'Access',
+        [Parameter(Mandatory=$true)]
+        $Path
+
     )
 
     begin {   
     }
 
     process {
-        if ($script:HTTP_listeners.$Prefix.LogPath) {
-            if ($script:HTTP_listeners.$Prefix.LogMutex) {
-                New-Object System.Threading.Mutex $false,"$Prefix`_log_mutex"
-            }
-        
-            $script:HTTP_listeners.$Prefix.LogMutex.WaitOne() | Out-Null
-            $Message | Out-File -Append $script:HTTP_listeners.$Prefix.LogPath
-            $script:HTTP_listeners.$Prefix.LogMutex.ReleaseMutex()
-        }
-
+        $mutex = New-Object System.Threading.Mutex $false, "$Prefix`_$Level"
+        $mutex.Waitone() | Out-Null
+        $Message | Out-File -FilePath $Path -Append 
+        $mutex.ReleaseMutex()
     }
 
     end {}
@@ -240,12 +240,12 @@ function Initialize-HTTPLog {
     )
 
     begin {
-        $full_path = Join-Path -Path $Path -ChildPath "$Prefix`_$Level.log"
+        $full_path = Join-Path -Path $Path -ChildPath "$Level.log"
         Write-Verbose "Using path $full_path"
 
         if (Test-Path $full_path) {
             Write-Verbose "Rolling log file"
-            Move-Item -Path $full_path -Destination "$full_path$(get-date -UFormat '%Y%m%d%H%M')"
+            Move-Item -Path $full_path -Destination "$full_path$(get-date -UFormat '%Y%m%d%H%M%S')"
         }
     
     }
@@ -255,6 +255,8 @@ function Initialize-HTTPLog {
             $script:HTTP_Listeners.$Prefix.Logs = @{}
         }
         $script:HTTP_Listeners.$Prefix.Logs.$Level = $full_path
+        New-Item -Path $full_path -ItemType file | Out-Null
+        $mutex = New-Object System.Threading.Mutex $false, "$Prefix`_$Level"
     }
 
     end {}

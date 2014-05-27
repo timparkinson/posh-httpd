@@ -13,7 +13,9 @@
         [Parameter()]
         [Int]$Throttle = 4,
         [Parameter()]
-        [System.Net.AuthenticationSchemes]$AuthenticationScheme
+        [System.Net.AuthenticationSchemes]$AuthenticationScheme,
+        [Parameter()]
+        $Log
     )
 
     begin {
@@ -32,14 +34,28 @@
 
     process {
         if (-not $script:HTTP_listeners.$Prefix.RunspacePool) {
+            $script:HTTP_listeners.$Prefix.Callback =  ConvertTo-HTTPCallback -Scriptblock $scriptblock
+            $script:HTTP_listeners.$Prefix.SetupScriptblock = $SetupScriptblock
+
+            #$script:HTTP_listeners.$Prefix.LogPath = $LogPath
+
+            if ($Log) {
+                $Log.Keys | 
+                    ForEach-Object {
+                        Initialize-HTTPLog -Prefix $Prefix -Level $_ -Path $Log.$_
+                    }
+            }
+
+            if ($script:HTTP_listeners.$Prefix.Logs.Debug) {Write-HTTPLog -Prefix $Prefix -Level Debug -Path $script:HTTP_listeners.$Prefix.Logs.Debug -Message "$(Get-Date -UFormat '%Y-%m-%dT%H:%M:%S') Logs initialised"}
+
             $runspaces = Initialize-HTTPRunspace -Prefix $Prefix -SharedState $script:HTTP_listeners -Throttle $Throttle
             #$script:HTTP_listeners.$Prefix.RunspacePool = $runspaces.Pool
             $script:HTTP_listeners.$Prefix.Powershells = $runspaces.Powershells
-            $script:HTTP_listeners.$Prefix.Callback =  ConvertTo-HTTPCallback -Scriptblock $scriptblock
-            $script:HTTP_listeners.$Prefix.SetupScriptblock = $SetupScriptblock
+            if ($script:HTTP_listeners.$Prefix.Logs.Debug) {Write-HTTPLog -Prefix $Prefix -Level Debug -Path $script:HTTP_listeners.$Prefix.Logs.Debug -Message "$(Get-Date -UFormat '%Y-%m-%dT%H:%M:%S') Runspaces created"}
+
             $script:HTTP_listeners.$Prefix.Listener = New-Object -TypeName System.Net.HttpListener
             $script:HTTP_listeners.$Prefix.Listener.Prefixes.Add($Prefix)
-            #$script:HTTP_listeners.$Prefix.LogPath = $LogPath
+            if ($script:HTTP_listeners.$Prefix.Logs.Debug) {Write-HTTPLog -Prefix $Prefix -Level Debug -Path $script:HTTP_listeners.$Prefix.Logs.Debug -Message "$(Get-Date -UFormat '%Y-%m-%dT%H:%M:%S') Listener created"}
 
             if ($AuthenticationScheme) {
                 $script:HTTP_listeners.$Prefix.Listener.AuthenticationSchemes = $AuthenticationScheme
@@ -47,6 +63,7 @@
 
             if ($Start) {
                 Start-HTTPListener -Prefix $Prefix
+                if ($script:HTTP_listeners.$Prefix.Logs.Debug) {Write-HTTPLog -Prefix $Prefix -Level Debug -Path $script:HTTP_listeners.$Prefix.Logs.Debug -Message "$(Get-Date -UFormat '%Y-%m-%dT%H:%M:%S') Listener started"}
             }
 
         } else {
@@ -81,14 +98,15 @@ function Initialize-HTTPRunspace {
             
 
             $callback = New-ScriptblockCallBack -Scriptblock $SharedState.$Prefix.Callback
+            
 
-            #$callback_state = New-Object -TypeName psobject -Property @{
-            #    'Listener' = $SharedState.$Prefix.Listener
-            #    'Callback' = $callback
-            #    'Prefix' = $Prefix
-            #    'Logs' = $SharedState.$Prefix.Logs
-            #}
-            $callback_state = $SharedState.$Prefix
+            $callback_state = New-Object -TypeName psobject -Property @{
+                'Listener' = $SharedState.$Prefix.Listener
+                'Callback' = $callback
+                'Prefix' = $Prefix
+                'Logs' = $SharedState.$Prefix.Logs
+            }
+            #$callback_state = $SharedState.$Prefix
                         
             $result = $SharedState.$Prefix.Listener.BeginGetContext($callback,$callback_state)
 
