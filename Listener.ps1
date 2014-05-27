@@ -13,9 +13,7 @@
         [Parameter()]
         [Int]$Throttle = 4,
         [Parameter()]
-        [System.Net.AuthenticationSchemes]$AuthenticationScheme,
-        [Parameter()]
-        $LogPath
+        [System.Net.AuthenticationSchemes]$AuthenticationScheme
     )
 
     begin {
@@ -41,7 +39,7 @@
             $script:HTTP_listeners.$Prefix.SetupScriptblock = $SetupScriptblock
             $script:HTTP_listeners.$Prefix.Listener = New-Object -TypeName System.Net.HttpListener
             $script:HTTP_listeners.$Prefix.Listener.Prefixes.Add($Prefix)
-            $script:HTTP_listeners.$Prefix.LogPath = $LogPath
+            #$script:HTTP_listeners.$Prefix.LogPath = $LogPath
 
             if ($AuthenticationScheme) {
                 $script:HTTP_listeners.$Prefix.Listener.AuthenticationSchemes = $AuthenticationScheme
@@ -84,12 +82,13 @@ function Initialize-HTTPRunspace {
 
             $callback = New-ScriptblockCallBack -Scriptblock $SharedState.$Prefix.Callback
 
-            $callback_state = New-Object -TypeName psobject -Property @{
-                'Listener' = $SharedState.$Prefix.Listener
-                'Callback' = $callback
-                'Prefix' = $Prefix
-                'LogPath' = $SharedState.$Prefix.LogPath
-            }
+            #$callback_state = New-Object -TypeName psobject -Property @{
+            #    'Listener' = $SharedState.$Prefix.Listener
+            #    'Callback' = $callback
+            #    'Prefix' = $Prefix
+            #    'Logs' = $SharedState.$Prefix.Logs
+            #}
+            $callback_state = $SharedState.$Prefix
                         
             $result = $SharedState.$Prefix.Listener.BeginGetContext($callback,$callback_state)
 

@@ -224,3 +224,38 @@ function Write-HTTPLog {
 
     end {}
 }
+
+
+function Initialize-HTTPLog {
+    [CmdletBinding()]
+
+    param(
+        [Parameter(Mandatory=$true)]
+        $Prefix,
+        [Parameter()]
+        [ValidateSet('Access','Debug')]
+        $Level = 'Access',
+        [Parameter()]
+        $Path
+    )
+
+    begin {
+        $full_path = Join-Path -Path $Path -ChildPath "$Prefix`_$Level.log"
+        Write-Verbose "Using path $full_path"
+
+        if (Test-Path $full_path) {
+            Write-Verbose "Rolling log file"
+            Move-Item -Path $full_path -Destination "$full_path$(get-date -UFormat '%Y%m%d%H%M')"
+        }
+    
+    }
+
+    process {
+        if (-not $script:HTTP_Listeners.$Prefix.Logs) {
+            $script:HTTP_Listeners.$Prefix.Logs = @{}
+        }
+        $script:HTTP_Listeners.$Prefix.Logs.$Level = $full_path
+    }
+
+    end {}
+}
