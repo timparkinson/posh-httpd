@@ -87,6 +87,8 @@ function Initialize-HTTPRunspace {
             $callback_state = New-Object -TypeName psobject -Property @{
                 'Listener' = $SharedState.$Prefix.Listener
                 'Callback' = $callback
+                'Prefix' = $Prefix
+                'LogPath' = $SharedState.$Prefix.LogPath
             }
                         
             $result = $SharedState.$Prefix.Listener.BeginGetContext($callback,$callback_state)
