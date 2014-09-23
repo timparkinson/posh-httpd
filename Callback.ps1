@@ -110,15 +110,19 @@ function ConvertTo-HTTPCallback {
             }
 
             try {
+                if ($callback_state.Logs.Debug) {Write-HTTPLog -Prefix $Prefix -Level Debug -Path $callback_state.Logs.Debug -Message "$(Get-Date -UFormat '%Y-%m-%dT%H:%M:%S') Invoking scriptblock for $($request| Format-List | Out-String)"}
                 $output_content = Invoke-Command -Scriptblock {
+                  
                     param($request, $identity, $application_log)
         
                     REPLACEWITHSCRIPTBLOCK
                     
+                } 
                 } -ArgumentList $request, $context.User, $application_log
-                 
+                if ($callback_state.Logs.Debug) {Write-HTTPLog -Prefix $Prefix -Level Debug -Path $callback_state.Logs.Debug -Message "$(Get-Date -UFormat '%Y-%m-%dT%H:%M:%S') Output content was $($output_content| Format-List | Out-String)"} 
             }
             catch {
+                if ($callback_state.Logs.Debug) {Write-HTTPLog -Prefix $Prefix -Level Debug -Path $callback_state.Logs.Debug -Message "$(Get-Date -UFormat '%Y-%m-%dT%H:%M:%S') Callback error: $($_| Format-List | Out-String)"}
                 $output_content = @{
                     StatusCode = [System.Net.HttpStatusCode]::InternalServerError 
                     Content = "$_"
