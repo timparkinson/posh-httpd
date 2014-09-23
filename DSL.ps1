@@ -127,7 +127,7 @@ function Get-HTTPRouter {
                 @" 
 
                 function $function_name {
-                    param(`$request,`$params,`$identity)
+                    param(`$request,`$params,`$identity, `$application_log)
                 
                     $($_.Scriptblock.ToString())
                 }
@@ -182,7 +182,7 @@ function Get-HTTPRouter {
                         # call the function
                             
                         try {
-                            & $route.Function $request $params $identity
+                            & $route.Function $request $params $identity $application_log
                             
                         } catch {
                                 
