@@ -205,7 +205,7 @@ function Write-HTTPLog {
         [Parameter(Mandatory=$true)]
         $Message,
         [Parameter()]
-        [ValidateSet('Access','Debug')]
+        [ValidateSet('Access','Debug', 'Application')]
         $Level = 'Access',
         [Parameter(Mandatory=$true)]
         $Path
@@ -233,7 +233,7 @@ function Initialize-HTTPLog {
         [Parameter(Mandatory=$true)]
         $Prefix,
         [Parameter()]
-        [ValidateSet('Access','Debug')]
+        [ValidateSet('Access','Debug', 'Application')]
         $Level = 'Access',
         [Parameter()]
         $Path
