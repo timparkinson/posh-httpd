@@ -113,12 +113,12 @@ function ConvertTo-HTTPCallback {
                 if ($callback_state.Logs.Debug) {Write-HTTPLog -Prefix $Prefix -Level Debug -Path $callback_state.Logs.Debug -Message "$(Get-Date -UFormat '%Y-%m-%dT%H:%M:%S') Invoking scriptblock for $($request| Format-List | Out-String)"}
                 $output_content = Invoke-Command -Scriptblock {
                   
-                    param($request, $identity, $application_log)
+                    param($request, $identity, $application_log, $Prefix)
         
                     REPLACEWITHSCRIPTBLOCK
                     
                  
-                } -ArgumentList $request, $context.User, $application_log
+                } -ArgumentList $request, $context.User, $application_log, $Prefix
                 if ($callback_state.Logs.Debug) {Write-HTTPLog -Prefix $Prefix -Level Debug -Path $callback_state.Logs.Debug -Message "$(Get-Date -UFormat '%Y-%m-%dT%H:%M:%S') Output content was $($output_content| Format-List | Out-String)"} 
             }
             catch {
