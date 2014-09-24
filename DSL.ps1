@@ -61,7 +61,7 @@ function ConvertTo-HTTPRoutePattern {
                         ForEach-Object {
                             $param_name = $_.value -replace ':', ''
                     
-                            $Pattern = $Pattern -replace ":$param_name", "(?<$param_name>\w+)"    
+                            $Pattern = $Pattern -replace ":$param_name", "(?<$param_name>[\w\-]+)"    
                         }
                 }
 
@@ -72,7 +72,7 @@ function ConvertTo-HTTPRoutePattern {
                         ForEach-Object {
                             $param_name = ($_.value -replace '\?', '') -replace ':', ''
                     
-                            $Pattern = $Pattern -replace "\?:$param_name\?", "(?<$param_name>\w+)?"    
+                            $Pattern = $Pattern -replace "\?:$param_name\?", "(?<$param_name>[\w\-]+)?"    
                         }
                 }
 
