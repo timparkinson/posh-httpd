@@ -117,7 +117,7 @@ function ConvertTo-HTTPCallback {
         
                     REPLACEWITHSCRIPTBLOCK
                     
-                } 
+                 
                 } -ArgumentList $request, $context.User, $application_log
                 if ($callback_state.Logs.Debug) {Write-HTTPLog -Prefix $Prefix -Level Debug -Path $callback_state.Logs.Debug -Message "$(Get-Date -UFormat '%Y-%m-%dT%H:%M:%S') Output content was $($output_content| Format-List | Out-String)"} 
             }
